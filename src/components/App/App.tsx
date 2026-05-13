@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import css from "./App.module.css";
 import type { Movie } from "../../types/movie";
 import {
@@ -21,25 +21,29 @@ function App() {
   const [modal, setModal] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  const { data, isError, isPending, isFetching, isSuccess } =
+  const { data, isError, isFetching, isSuccess } =
     useQuery<FetchMoviesResponse>({
       queryKey: ["movie", query, page],
       queryFn: () => fetchMovies(query, page),
       enabled: !!query,
-      placeholderData: () => ({
-        results: [],
-        total_pages: 0,
-      }),
+      placeholderData: keepPreviousData,
     });
 
   const movies = data?.results ?? [];
   const totalPages = data?.total_pages ?? 0;
 
   useEffect(() => {
-    if (!isError && query && movies.length === 0) {
+    if (query && isSuccess && !isFetching && movies.length === 0) {
+      toast.dismiss();
       toast.error("No movies found for your request.");
     }
-  }, [movies.length, query, isError]);
+  }, [movies.length, query, isSuccess, isFetching]);
+
+  useEffect(() => {
+    if (movies.length > 0) {
+      toast.dismiss();
+    }
+  }, [movies.length]);
 
   const handleSearch = (value: string) => {
     setQuery(value);
@@ -60,7 +64,7 @@ function App() {
     <div className={css.app}>
       <Toaster />
       <SearchBar onSubmit={handleSearch} />
-      {(isPending || isFetching) && <Loader />}
+      {isFetching && <Loader />}
       {isError && <ErrorMessage />}
       {isSuccess && movies.length === 0 && <p>No results</p>}
       {totalPages > 1 && (
