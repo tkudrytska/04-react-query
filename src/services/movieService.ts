@@ -1,5 +1,10 @@
 import axios from "axios";
-import type {FetchMoviesResponse} from "../types/movie";
+import type { Movie } from "../types/movie";
+
+export interface FetchMoviesResponse {
+  results: Movie[];
+  total_pages: number;
+}
 
 export const fetchMovies = async (query: string, page: number): Promise<FetchMoviesResponse> => {
   try {
